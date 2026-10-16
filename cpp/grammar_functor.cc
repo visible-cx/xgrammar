@@ -3313,6 +3313,34 @@ void GrammarFSMHasherImpl::Apply(Grammar* grammar) {
 
   // Get the reference graph.
   ref_graph_from_referee_to_referrer_ = RuleRefGraphFinder().Apply(*grammar);
+  // Rules created while building the FSMs (the repetitions of a kRegex rule) are referenced by
+  // rule and repeat edges only, not by a grammar expression. Add those references, so that a
+  // referee is hashed before the rule whose hash combines it.
+  for (int referrer = 0; referrer < (*grammar)->NumRules(); ++referrer) {
+    const auto& rule_fsm = grammar->ImplPtr()->per_rule_fsms[referrer];
+    if (!rule_fsm.has_value()) {
+      continue;
+    }
+    std::unordered_set<int> reachable_states;
+    rule_fsm->GetFsm().GetReachableStates(&reachable_states);
+    for (int state : reachable_states) {
+      for (const auto& edge : rule_fsm->GetFsm().GetFsm().GetEdges(state)) {
+        int32_t referee = -1;
+        if (edge.IsRuleRef()) {
+          referee = edge.GetRefRuleId();
+        } else if (edge.IsRepeatRef()) {
+          referee = grammar->ImplPtr()->complete_fsm.GetRepeatEdgeInfo(edge.GetAuxIndex()).RuleId();
+        }
+        if (referee < 0 || referee == referrer) {
+          continue;
+        }
+        auto& referrers = ref_graph_from_referee_to_referrer_[referee];
+        if (std::find(referrers.begin(), referrers.end(), referrer) == referrers.end()) {
+          referrers.push_back(referrer);
+        }
+      }
+    }
+  }
   ref_graph_from_referrer_to_referee_ = std::vector<std::vector<int32_t>>((*grammar)->NumRules());
   for (int referee = 0; referee < static_cast<int>(ref_graph_from_referee_to_referrer_.size());
        ++referee) {
