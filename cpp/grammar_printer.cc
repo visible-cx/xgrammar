@@ -227,6 +227,9 @@ std::string GrammarPrinter::PrintSubstring(const GrammarExpr& grammar_expr) {
     }
     result += escape_chunk(chunks[i]);
   }
+  if (!grammar_->GetSubstringAllowsEmpty(grammar_expr)) {
+    result += chunks.empty() ? "allow_empty=false" : ", allow_empty=false";
+  }
   return result + ")";
 }
 

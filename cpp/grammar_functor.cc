@@ -1182,8 +1182,15 @@ class AllowEmptyRuleAnalyzerImpl : public GrammarVisitor<std::vector<int32_t>> {
       }
 
       if (grammar_expr.type == GrammarExprType::kSubstring) {
-        // A substring automaton always accepts the empty string: every state is accepting.
-        empty_rule_id_set->insert(i);
+        // Every automaton state is accepting, the start state only when the empty subsequence
+        // is allowed; an empty chunk reaches an accepting state without consuming a byte.
+        bool has_empty_chunk = false;
+        for (const auto& chunk : base_grammar_->GetSubstringChunks(grammar_expr)) {
+          has_empty_chunk = has_empty_chunk || chunk.empty();
+        }
+        if (base_grammar_->GetSubstringAllowsEmpty(grammar_expr) || has_empty_chunk) {
+          empty_rule_id_set->insert(i);
+        }
         continue;
       }
 
@@ -1392,7 +1399,10 @@ class GrammarFSMBuilderImpl {
       const std::string& regex, bool json_string, int start_state, std::vector<int32_t>* end_states
   );
   void BuildSubstring(
-      const std::vector<std::string>& chunks, int start_state, std::vector<int32_t>* end_states
+      const std::vector<std::string>& chunks,
+      bool allow_empty,
+      int start_state,
+      std::vector<int32_t>* end_states
   );
   void BuildTagDispatch(
       const Grammar::Impl::TagDispatch& tag_dispatch,
@@ -1637,7 +1647,12 @@ void GrammarFSMBuilderImpl::BuildExpression(
           end_states
       );
     case ExprType::kSubstring:
-      return BuildSubstring(grammar->GetSubstringChunks(expr), start_state, end_states);
+      return BuildSubstring(
+          grammar->GetSubstringChunks(expr),
+          grammar->GetSubstringAllowsEmpty(expr),
+          start_state,
+          end_states
+      );
     case ExprType::kTagDispatch:
       return BuildTagDispatch(grammar->GetTagDispatch(expr), start_state, end_states);
     case ExprType::kTokenTagDispatch:
@@ -1853,9 +1868,12 @@ void GrammarFSMBuilderImpl::BuildRegex(
 }
 
 void GrammarFSMBuilderImpl::BuildSubstring(
-    const std::vector<std::string>& chunks, int start_state, std::vector<int32_t>* end_states
+    const std::vector<std::string>& chunks,
+    bool allow_empty,
+    int start_state,
+    std::vector<int32_t>* end_states
 ) {
-  AppendFSM(SuffixAutomata::Build(chunks), start_state, end_states);
+  AppendFSM(SuffixAutomata::Build(chunks, allow_empty), start_state, end_states);
 }
 
 void GrammarFSMBuilderImpl::BuildTagDispatch(

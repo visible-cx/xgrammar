@@ -12,7 +12,7 @@
 
 namespace xgrammar {
 
-FSMWithStartEnd SuffixAutomata::Build(const std::vector<std::string>& chunks) {
+FSMWithStartEnd SuffixAutomata::Build(const std::vector<std::string>& chunks, bool allow_empty) {
   // Step 1. Build the suffix automaton over the chunk sequence with the standard online
   // construction. Each chunk is treated as one symbol of the alphabet.
   struct State {
@@ -58,13 +58,13 @@ FSMWithStartEnd SuffixAutomata::Build(const std::vector<std::string>& chunks) {
   }
 
   // Step 2. Expand the chunk-level automaton into a byte-level FSM. Automaton state i maps to
-  // FSM state i; every automaton state is accepting. A chunk-labeled transition becomes a chain
-  // of byte transitions through fresh intermediate states; an empty chunk becomes an epsilon
-  // transition.
+  // FSM state i; every automaton state is accepting, except the start state when the empty
+  // subsequence is not allowed. A chunk-labeled transition becomes a chain of byte transitions
+  // through fresh intermediate states; an empty chunk becomes an epsilon transition.
   FSM fsm(static_cast<int>(states.size()));
   std::vector<int32_t> end_states;
   end_states.reserve(states.size());
-  for (int32_t index = 0; index < static_cast<int32_t>(states.size()); ++index) {
+  for (int32_t index = allow_empty ? 0 : 1; index < static_cast<int32_t>(states.size()); ++index) {
     end_states.push_back(index);
   }
   for (int32_t index = 0; index < static_cast<int32_t>(states.size()); ++index) {

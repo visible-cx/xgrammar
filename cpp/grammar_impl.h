@@ -284,12 +284,19 @@ class Grammar::Impl {
     return grammar_expr[0] != 0;
   }
 
+  /*! \brief Whether the substring grammar expr matches the subsequence of no chunks. */
+  bool GetSubstringAllowsEmpty(const GrammarExpr& grammar_expr) const {
+    XGRAMMAR_DCHECK(grammar_expr.type == GrammarExprType::kSubstring)
+        << "GrammarExpr is not a substring";
+    return grammar_expr[0] != 0;
+  }
+
   /*! \brief Get the chunk list of the substring grammar expr. */
   std::vector<std::string> GetSubstringChunks(const GrammarExpr& grammar_expr) const {
     XGRAMMAR_DCHECK(grammar_expr.type == GrammarExprType::kSubstring)
         << "GrammarExpr is not a substring";
     std::vector<std::string> chunks;
-    for (int i = 0; i < grammar_expr.size();) {
+    for (int i = 1; i < grammar_expr.size();) {
       int32_t chunk_len = grammar_expr[i++];
       XGRAMMAR_DCHECK(chunk_len >= 0 && i + chunk_len <= grammar_expr.size())
           << "Invalid substring chunk length";

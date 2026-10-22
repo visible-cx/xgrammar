@@ -99,8 +99,10 @@ int32_t GrammarBuilder::AddRegex(const std::string& regex_str, bool json_string)
   return AddGrammarExpr({GrammarExprType::kRegex, data.data(), static_cast<int32_t>(data.size())});
 }
 
-int32_t GrammarBuilder::AddSubstring(const std::vector<std::string>& chunks) {
+int32_t GrammarBuilder::AddSubstring(const std::vector<std::string>& chunks, bool allow_empty) {
+  // [allow_empty, chunk0_len, byte0_0, ..., chunk1_len, ...]
   std::vector<int32_t> data;
+  data.push_back(static_cast<int32_t>(allow_empty));
   for (const std::string& chunk : chunks) {
     data.push_back(static_cast<int32_t>(chunk.size()));
     for (char c : chunk) {

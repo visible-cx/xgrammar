@@ -26,9 +26,11 @@ class SuffixAutomata {
    * state is accepting. Each chunk-labeled transition is then expanded into a chain of byte
    * transitions; an empty chunk becomes an epsilon transition.
    * \param chunks The list of byte string chunks. Chunks may be empty or repeated.
+   * \param allow_empty Whether the empty subsequence (no chunk at all) is accepted. When false,
+   * the start state is not accepting, so a match must take at least one chunk.
    * \return The FSM with start and end states.
    */
-  static FSMWithStartEnd Build(const std::vector<std::string>& chunks);
+  static FSMWithStartEnd Build(const std::vector<std::string>& chunks, bool allow_empty = true);
 };
 
 }  // namespace xgrammar

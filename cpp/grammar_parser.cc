@@ -1337,8 +1337,18 @@ int32_t EBNFParser::ParseSubstringMacro() {
   auto args = ParseMacroArguments();
   auto delta_element = start - current_token_;
 
-  if (!args.named_arguments.empty()) {
-    ReportParseError("Substring() does not accept named arguments", delta_element);
+  bool allow_empty = true;
+  for (const auto& [name, _] : args.named_arguments) {
+    if (name != "allow_empty") {
+      ReportParseError("Substring does not support the named argument " + name, delta_element);
+    }
+  }
+  if (auto it = args.named_arguments.find("allow_empty"); it != args.named_arguments.end()) {
+    auto bool_node = std::get_if<MacroIR::BooleanNode>(it->second.get());
+    if (bool_node == nullptr) {
+      ReportParseError("allow_empty must be a boolean", delta_element);
+    }
+    allow_empty = bool_node->value;
   }
 
   std::vector<std::string> chunks;
@@ -1351,7 +1361,7 @@ int32_t EBNFParser::ParseSubstringMacro() {
     chunks.push_back(string_node->value);
   }
 
-  return builder_.AddSubstring(chunks);
+  return builder_.AddSubstring(chunks, allow_empty);
 }
 
 int32_t EBNFParser::ParseTokenSet() {

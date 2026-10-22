@@ -265,8 +265,9 @@ std::optional<std::string> Grammar::Impl::Validate() const {
         ok = size >= 1;
         break;
       case GrammarExprType::kSubstring:
-        // [chunk0_len, byte0_0, ..., chunk1_len, ...]
-        for (int64_t i = 0; ok && i < size;) {
+        // [allow_empty, chunk0_len, byte0_0, ..., chunk1_len, ...]
+        ok = size >= 1 && (expr[0] == 0 || expr[0] == 1);
+        for (int64_t i = 1; ok && i < size;) {
           const int64_t chunk_len = expr[i++];
           ok = chunk_len >= 0 && i + chunk_len <= size;
           i += chunk_len;

@@ -449,7 +449,8 @@ or `"cde"`: chunks are atomic and cannot be split.
 
 - Every positional argument must be a string. Chunks may be empty or repeated. Zero or more
   chunks are accepted.
-- No named arguments are accepted.
+- `allow_empty` (boolean, default `true`): whether the subsequence of no chunks is matched.
+  `Substring("abc", "de", allow_empty=false)` accepts `"abc"`, `"de"` and `"abcde"` but not `""`.
 
 The chunk list is compiled into a suffix automaton, so the number of automaton states grows
 linearly with the number of chunks. This is also the compiled form of the Lark
